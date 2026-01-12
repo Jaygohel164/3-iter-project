@@ -3,35 +3,50 @@ name: Deploy to Amazon EC2
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   deploy:
-    runs-on: self-hosted
+    name: 3t
+    runs-on: self-hosted   # EC2 runner (not github hosted)
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          ref: main
+    # 1️⃣ Checkout Code
+    - name: Checkout branch (dev)
+      uses: actions/checkout@v4
+      with:
+        ref: dev
 
-      - name: Create backend .env file
-        run: |
-          cat <<EOF > backend/.env
-          NODE_ENV=production
-          PORT=3500
-          EOF
+    # 2️⃣ Create Backend .env file
+    - name: Create backend .env file
+      run: |
+        cat <<EOF > backend/.env
+        # Backend Environment Variables
+        DJANGO_ENV=production
+        DEBUG=False
+        SECRET_KEY=${{ secrets.BACKEND_SECRET_KEY }}
+        DATABASE_URL=${{ secrets.DATABASE_URL }}
+        ALLOWED_HOSTS=*
+        EOF
 
-      - name: Create frontend .env file
-        run: |
-          cat <<EOF > frontend/.env
-          REACT_APP_API_URL=${{ secrets.FRONTEND_API_URL }}
-          NODE_ENV=production
-          EOF
+    # 3️⃣ Create Frontend .env file
+    - name: Create frontend .env file
+      run: |
+        cat <<EOF > frontend/.env
+        # Frontend Environment Variables
+        REACT_APP_API_URL=${{ secrets.REACT_APP_API_URL }}
+        NODE_ENV=production
+        EOF
 
-      - name: Build Docker Images
-        run: docker compose build
+    # 4️⃣ Build Docker Images
+    - name: Build Docker Images
+      run: docker compose build
 
-      - name: Stop Existing Containers
-        run: docker compose down
+    # 5️⃣ Stop existing containers
+    - name: Stop existing containers
+      run: docker compose down
 
-      - name: Start Containers
-        run: docker compose up -d
+    # 6️⃣ Start containers
+    - name: Start containers
+      run: docker compose up -d
