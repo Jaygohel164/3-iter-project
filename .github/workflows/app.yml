@@ -13,10 +13,11 @@ jobs:
 
     steps:
     # 1️⃣ Checkout Code
-    - name: Checkout branch (dev)
+    - name: Checkout code
       uses: actions/checkout@v4
       with:
-        ref: main
+          ref: ${{ github.ref_name }}
+
 
     # 2️⃣ Create Backend .env file
     - name: Create backend .env file
