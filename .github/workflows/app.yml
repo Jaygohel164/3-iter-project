@@ -16,7 +16,7 @@ jobs:
     - name: Checkout branch (dev)
       uses: actions/checkout@v4
       with:
-        ref: dev
+        ref: main
 
     # 2️⃣ Create Backend .env file
     - name: Create backend .env file
