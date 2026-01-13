@@ -3,51 +3,64 @@ name: Deploy to Amazon EC2
 on:
   workflow_dispatch:
 
-permissions:
-  contents: read
-
 jobs:
   deploy:
-    name: 3t
-    runs-on: self-hosted   # EC2 runner (not github hosted)
+    name: Deploy
+    runs-on: 3t
 
     steps:
-    # 1️⃣ Checkout Code
-    - name: Checkout code
+    - name: Checkout branch
       uses: actions/checkout@v4
       with:
-          ref: ${{ github.ref_name }}
-
-
-    # 2️⃣ Create Backend .env file
-    - name: Create backend .env file
+        ref: dev
+      
+    - name: Create Application .env file
       run: |
-        cat <<EOF > backend/.env
-        # Backend Environment Variables
-        DJANGO_ENV=production
-        DEBUG=False
-        SECRET_KEY=${{ secrets.BACKEND_SECRET_KEY }}
-        DATABASE_URL=${{ secrets.DATABASE_URL }}
-        ALLOWED_HOSTS=*
-        EOF
-
-    # 3️⃣ Create Frontend .env file
-    - name: Create frontend .env file
-      run: |
-        cat <<EOF > frontend/.env
-        # Frontend Environment Variables
-        REACT_APP_API_URL=${{ secrets.REACT_APP_API_URL }}
+        cat <<EOF > .env
+        # Server Configuration
+        AUTO_MIGRATE=true
         NODE_ENV=production
+        SERVER_PORT=3001
+        API_PREFIX=/api/v1
+        CORS_ORIGIN=*
+        
+        # Database Configuration
+        DATABASE_URL=postgres://postgres:s!6hacls1briPhIph%2B6l@dev-gnostic.cn8wmm0i46k9.ap-south-1.rds.amazonaws.com:5432/dev_gdnostic
+        MEETINGS_POSTGRES_USER=postgres
+        MEETINGS_POSTGRES_DB=dev_gdnostic
+        MEETINGS_POSTGRES_PASSWORD=s!6hacls1briPhIph%2B6l
+        MEETINGS_POSTGRES_HOST=dev-gnostic.cn8wmm0i46k9.ap-south-1.rds.amazonaws.com
+
+        # Redis Configuration
+        REDIS_HOST=redis
+        REDIS_PORT=6379
+        REDIS_PASSWORD=gnosticpass
+        REDIS_URL=redis://gnosticpass@65.1.130.47:6379/0
+        
+        # MediaSoup Configuration
+        MEDIASOUP_ANNOUNCED_IP=3.110.199.153
+        MEDIASOUP_LISTEN_IP=0.0.0.0
+        MEDIASOUP_RTC_MIN_PORT=47000
+        MEDIASOUP_RTC_MAX_PORT=47099
+        
+        # Service URLs
+        FILING_SERVICE_URL=https://filing-service.gnostic.cloud
+        CALENDAR_SERVICE_URL=https://calendar-service.gnostic.cloud
+        IAM_SERVICE_URL=https://iam-service.gnostic.cloud
         EOF
 
-    # 4️⃣ Build Docker Images
-    - name: Build Docker Images
-      run: docker compose build
+    - name: Create Docker Config .env.docker file
+      run: |
+        cat <<EOF > .env.docker
+        COMPOSE_PROJECT_NAME=meetings-stack
+        DOCKER_IMAGE_TAG=latest
+        EOF
 
-    # 5️⃣ Stop existing containers
-    - name: Stop existing containers
-      run: docker compose down
+    - name: Build Docker Image
+      run: docker compose --env-file .env.docker build
 
-    # 6️⃣ Start containers
-    - name: Start containers
-      run: docker compose up -d
+    - name: Stop Existing Containers
+      run: docker compose --env-file .env.docker down --remove-orphans
+
+    - name: Start Containers
+      run: docker compose --env-file .env.docker up -d
