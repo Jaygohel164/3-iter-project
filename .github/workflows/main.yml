@@ -6,7 +6,7 @@ on:
 jobs:
   deploy:
     name: Production Deployment
-    runs-on: 3t  # This runs on your EC2 instance agent
+    runs-on: 3t  
 
     steps:
       - name: Cleanup Workspace
