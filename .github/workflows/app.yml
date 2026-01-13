@@ -18,7 +18,7 @@ jobs:
     # 2. MANUAL CLONE (Using PAT to bypass the GitHub Action bug)
     - name: Manual Git Clone
       run: |
-        git clone -b dev https://${{ secrets.GH_PAT }}@github.com/Jaygohel164/3-iter-project.git .
+        git clone https://${{ secrets.GH_PAT }}@github.com/Jaygohel164/3-iter-project.git .
 
     # 3. CREATE BACKEND .ENV
     - name: Create Backend .env
