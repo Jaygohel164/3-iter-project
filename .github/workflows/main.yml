@@ -1,0 +1,53 @@
+name: Deploy to Amazon EC2
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: 3t
+
+    steps:
+    # 1. FORCE CLEAN (This stops the "Exit Code 1" by using sudo to wipe the folder)
+    - name: Force Clean Workspace
+      run: |
+        sudo rm -rf /home/ubuntu/3-iter-project/actions-runner/_work/3-iter-project/3-iter-project/*
+        sudo rm -rf /home/ubuntu/3-iter-project/actions-runner/_work/3-iter-project/3-iter-project/.* || true
+
+    # 2. MANUAL CLONE (Using PAT to bypass the GitHub Action bug)
+    - name: Manual Git Clone
+      run: |
+        git clone https://${{ secrets.GH_PAT }}@github.com/Jaygohel164/3-iter-project.git .
+
+    # 3. CREATE BACKEND .ENV
+    - name: Create Backend .env
+      run: |
+        cat <<EOF > backend/.env
+        AUTO_MIGRATE=true
+        NODE_ENV=production
+        SERVER_PORT=3001
+        API_PREFIX=/api/v1
+        CORS_ORIGIN=*
+        DATABASE_URL=postgres://postgres:s!6hacls1briPhIph%2B6l@dev-gnostic.cn8wmm0i46k9.ap-south-1.rds.amazonaws.com:5432/dev_gdnostic
+        REDIS_URL=redis://gnosticpass@65.1.130.47:6379/0
+        MEDIASOUP_ANNOUNCED_IP=3.110.199.153
+        MEDIASOUP_LISTEN_IP=0.0.0.0
+        MEDIASOUP_RTC_MIN_PORT=47000
+        MEDIASOUP_RTC_MAX_PORT=47099
+        EOF
+
+    # 4. CREATE FRONTEND .ENV
+    - name: Create Frontend .env
+      run: |
+        cat <<EOF > frontend/.env
+        VITE_API_URL=http://3.110.199.153:3001/api/v1
+        VITE_SOCKET_URL=http://3.110.199.153:3001
+        EOF
+
+    # 5. DOCKER DEPLOY
+    - name: Build and Start
+      run: |
+        sudo docker compose build
+        sudo docker compose down --remove-orphans
+        sudo docker compose up -d
