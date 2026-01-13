@@ -9,50 +9,44 @@ jobs:
     runs-on: 3t
 
     steps:
-    # This step forces the runner to delete the corrupted folder manually
-    - name: Clean Corrupted Workspace
+    # Manual Fetch to bypass the actions/checkout error
+    - name: Manual Git Checkout
       run: |
-        echo "Cleaning up old runner directory..."
-        rm -rf ${{ github.workspace }}/*
-        rm -rf ${{ github.workspace }}/.git
-
-    - name: Checkout branch
-      uses: actions/checkout@v4
-      with:
-        ref: main
-        clean: true
-        fetch-depth: 0  # Fetches all history to ensure 'main' is found correctly
+        echo "Clearing workspace..."
+        sudo rm -rf ./*
+        sudo rm -rf ./.git
+        echo "Cloning repository manually..."
+        git clone -b dev https://github.com/Jaygohel164/3-iter-project.git .
       
     - name: Create Application .env file
       run: |
         cat <<EOF > .env
-        # Server Configuration
         AUTO_MIGRATE=true
         NODE_ENV=production
         SERVER_PORT=3001
         API_PREFIX=/api/v1
         CORS_ORIGIN=*
         
-        # Database Configuration
+        # Database
         DATABASE_URL=postgres://postgres:s!6hacls1briPhIph%2B6l@dev-gnostic.cn8wmm0i46k9.ap-south-1.rds.amazonaws.com:5432/dev_gdnostic
         MEETINGS_POSTGRES_USER=postgres
         MEETINGS_POSTGRES_DB=dev_gdnostic
         MEETINGS_POSTGRES_PASSWORD=s!6hacls1briPhIph%2B6l
         MEETINGS_POSTGRES_HOST=dev-gnostic.cn8wmm0i46k9.ap-south-1.rds.amazonaws.com
 
-        # Redis Configuration
-        REDIS_HOST=redis
+        # Redis
+        REDIS_HOST=65.1.130.47
         REDIS_PORT=6379
         REDIS_PASSWORD=gnosticpass
         REDIS_URL=redis://gnosticpass@65.1.130.47:6379/0
         
-        # MediaSoup Configuration
+        # MediaSoup
         MEDIASOUP_ANNOUNCED_IP=3.110.199.153
         MEDIASOUP_LISTEN_IP=0.0.0.0
         MEDIASOUP_RTC_MIN_PORT=47000
         MEDIASOUP_RTC_MAX_PORT=47099
         
-        # Service URLs
+        # Services
         FILING_SERVICE_URL=https://filing-service.gnostic.cloud
         CALENDAR_SERVICE_URL=https://calendar-service.gnostic.cloud
         IAM_SERVICE_URL=https://iam-service.gnostic.cloud
