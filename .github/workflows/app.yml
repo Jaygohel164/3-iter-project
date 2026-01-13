@@ -6,64 +6,63 @@ on:
 jobs:
   deploy:
     name: Deploy
-    runs-on: 3t
+    runs-on: 3t  # Using the runner name from your logs
 
     steps:
-    # STEP 1: MANUALLY CLEAN AND CLONE (Replaces actions/checkout)
-    - name: Clean Workspace and Clone
+    # 1. FIX: Manual Checkout to bypass Git "Exit Code 1"
+    - name: Clean and Clone Repository
       run: |
-        echo "Removing old files to fix Git corruption..."
+        echo "Clearing corrupted workspace..."
         sudo rm -rf ./* || true
         sudo rm -rf ./.git || true
-        
-        echo "Cloning fresh copy of dev branch..."
-        # Using the PAT secret you created in GitHub Settings
+        echo "Cloning dev branch..."
         git clone -b dev https://${{ secrets.GH_PAT }}@github.com/Jaygohel164/3-iter-project.git .
 
-    # STEP 2: CREATE .ENV FILES
-    - name: Create Application .env file
+    # 2. BACKEND .env (inside the 'backend' folder)
+    - name: Create Backend .env
       run: |
-        cat <<EOF > .env
+        cat <<EOF > backend/.env
         AUTO_MIGRATE=true
         NODE_ENV=production
         SERVER_PORT=3001
         API_PREFIX=/api/v1
         CORS_ORIGIN=*
         
+        # DB & Redis
         DATABASE_URL=postgres://postgres:s!6hacls1briPhIph%2B6l@dev-gnostic.cn8wmm0i46k9.ap-south-1.rds.amazonaws.com:5432/dev_gdnostic
         MEETINGS_POSTGRES_USER=postgres
         MEETINGS_POSTGRES_DB=dev_gdnostic
         MEETINGS_POSTGRES_PASSWORD=s!6hacls1briPhIph%2B6l
         MEETINGS_POSTGRES_HOST=dev-gnostic.cn8wmm0i46k9.ap-south-1.rds.amazonaws.com
-
-        REDIS_HOST=65.1.130.47
-        REDIS_PORT=6379
-        REDIS_PASSWORD=gnosticpass
         REDIS_URL=redis://gnosticpass@65.1.130.47:6379/0
         
+        # MediaSoup
         MEDIASOUP_ANNOUNCED_IP=3.110.199.153
         MEDIASOUP_LISTEN_IP=0.0.0.0
         MEDIASOUP_RTC_MIN_PORT=47000
         MEDIASOUP_RTC_MAX_PORT=47099
         
+        # Services
         FILING_SERVICE_URL=https://filing-service.gnostic.cloud
         CALENDAR_SERVICE_URL=https://calendar-service.gnostic.cloud
         IAM_SERVICE_URL=https://iam-service.gnostic.cloud
         EOF
 
-    - name: Create Docker Config .env.docker file
+    # 3. FRONTEND .env (inside the 'frontend' folder)
+    - name: Create Frontend .env
       run: |
-        cat <<EOF > .env.docker
-        COMPOSE_PROJECT_NAME=meetings-stack
-        DOCKER_IMAGE_TAG=latest
+        cat <<EOF > frontend/.env
+        VITE_API_URL=https://api.gnostic.cloud/api/v1
+        VITE_SOCKET_URL=https://api.gnostic.cloud
+        NODE_ENV=production
         EOF
 
-    # STEP 3: DOCKER DEPLOYMENT
-    - name: Build Docker Image
-      run: docker compose --env-file .env.docker build
-
-    - name: Stop Existing Containers
-      run: docker compose --env-file .env.docker down --remove-orphans
-
-    - name: Start Containers
-      run: docker compose --env-file .env.docker up -d
+    # 4. DOCKER DEPLOYMENT
+    - name: Build and Deploy
+      run: |
+        # Build images using the docker-compose.yml in the root
+        docker compose build
+        
+        # Restart the stack
+        docker compose down --remove-orphans
+        docker compose up -d
